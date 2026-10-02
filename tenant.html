@@ -1,1 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROCK HOUSINGS — Tenant Portal</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230C0C10'/%3E%3Ctext x='50' y='62' font-family='Arial' font-size='38' font-weight='900' fill='%23fff' text-anchor='middle'%3ERH%3C/text%3E%3C/svg%3E" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .font-black { font-family: 'Poppins', 'Inter', sans-serif; font-weight: 900; }
+    .month-current { box-shadow: 0 0 0 3px #0C0C10, 0 8px 24px rgba(12,12,16,.35); }
+    .month-paid { background: #16A34A; color: #fff; }
+    .month-paid-partial { background: #FBBF24; color: #0C0C10; }
+    .month-unpaid { background: #F3F4F6; color: #9CA3AF; border: 1px solid #E5E7EB; }
+    .month-future { background: #FFFFFF; color: #9CA3AF; border: 1px dashed #E5E7EB; }
+</style>
+</head>
+<body class="bg-[#f6f6f7] min-h-screen">
 
+<header class="sticky top-0 bg-white/90 backdrop-blur border-b z-20">
+  <div class="max-w-5xl mx-auto px-4 h-[56px] flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-black text-white rounded-lg flex items-center justify-center font-black text-xs">RH</div>
+      <div class="leading-tight">
+        <div class="font-black text-[13px]">ROCK HOUSINGS</div>
+        <div class="text-[11px] text-gray-500"><span id="unitLabel">—</span> • <span id="phoneLabel">—</span></div>
+      </div>
+    </div>
+    <a href="index.html" class="bg-black text-white text-xs px-4 py-2 rounded-full font-bold">Exit</a>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div class="lg:col-span-2 space-y-4">
+
+    <div class="bg-black text-white rounded-[28px] p-6">
+      <div class="flex justify-between">
+        <div class="cursor-pointer" onclick="document.getElementById('balanceModal').classList.remove('hidden')">
+          <div class="text-[11px] text-white/50 tracking-widest">BALANCE DUE</div>
+          <div id="balanceDue" class="text-[32px] font-black mt-1">UGX 0</div>
+          <div class="text-xs text-white/50"><span id="balanceMeta">—</span> • <span class="unitTxt">—</span></div>
+        </div>
+        <div class="bg-white/10 rounded-xl px-3 py-2 text-right">
+          <div class="text-[10px] text-white/50">PAID THIS YEAR</div>
+          <div id="paidYTD" class="text-sm font-bold">UGX 0</div>
+        </div>
+      </div>
+
+      <div class="mt-6 bg-white/10 rounded-[16px] p-4 border border-white/10">
+        <div class="text-[10px] font-bold tracking-widest text-white/60">HOW MUCH WILL YOU PAY?</div>
+        <div class="flex gap-2 mt-3">
+          <div class="flex-1 bg-white rounded-xl flex items-center px-4">
+            <span class="text-[12px] font-black text-gray-400">UGX</span>
+            <input id="amountInput" type="number" value="0" oninput="generatePRN()" class="w-full bg-transparent outline-none font-black text-[18px] ml-2 py-3 text-black">
+          </div>
+          <button onclick="setAmount(currentDue())" class="bg-white text-black text-[11px] px-4 rounded-xl font-bold">Full</button>
+        </div>
+        <div class="flex gap-2 mt-3 flex-wrap">
+          <button onclick="setAmount(100000)" class="bg-white/10 hover:bg-white hover:text-black text-white text-[10px] px-3 py-1.5 rounded-full transition">100k</button>
+          <button onclick="setAmount(200000)" class="bg-white/10 hover:bg-white hover:text-black text-white text-[10px] px-3 py-1.5 rounded-full transition">200k</button>
+          <button onclick="setAmount(Math.round(currentRent()/2))" class="bg-white/10 hover:bg-white hover:text-black text-white text-[10px] px-3 py-1.5 rounded-full transition">Half</button>
+          <button onclick="setAmount(currentRent())" class="bg-white/10 hover:bg-white hover:text-black text-white text-[10px] px-3 py-1.5 rounded-full transition">One month</button>
+        </div>
+      </div>
+
+      <div class="mt-4 bg-white text-black rounded-[16px] p-4 flex justify-between items-center cursor-pointer" onclick="copyPRN()">
+        <div>
+          <div class="text-[10px] font-bold tracking-widest text-gray-400">PRN FOR THIS AMOUNT</div>
+          <div id="prn" class="font-mono font-black text-[15px] mt-1">RH-000-0-000000</div>
+          <div class="text-[11px] text-gray-500"><span id="prnAmount">UGX 0</span> • Anyone can pay</div>
+        </div>
+        <button class="bg-black text-white text-xs px-4 py-2.5 rounded-full font-bold">Copy</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <button onclick="makePayment('MTN MoMo')" class="bg-[#FFCC00] text-black py-3.5 rounded-xl font-black text-sm">Pay MTN MoMo</button>
+        <button onclick="makePayment('Airtel Money')" class="bg-white text-black py-3.5 rounded-xl font-black text-sm">Pay Airtel</button>
+      </div>
+      <div id="payStatus" class="hidden mt-3 bg-green-500 text-white text-xs p-3 rounded-xl text-center font-bold"></div>
+    </div>
+
+    <div class="bg-white rounded-[24px] border p-5">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-black text-sm">Months Paid • <span id="yearLabel">2025</span> • <span class="unitTxt">—</span></h3>
+        <span id="monthsSummary" class="text-[11px] bg-black text-white px-3 py-1 rounded-full">0/12</span>
+      </div>
+      <div id="monthsGrid" class="grid grid-cols-3 md:grid-cols-4 gap-3"></div>
+      <div class="mt-4 text-[11px] text-gray-500 flex gap-3 flex-wrap">
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-600"></span> Fully paid</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Partial</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-black"></span> Current month</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-gray-300"></span> Unpaid</span>
+      </div>
+      <p class="text-[11px] text-gray-500 mt-3 leading-relaxed">Overpayments automatically flow to the next month. Earlier unpaid months are settled first.</p>
+    </div>
+
+    <div class="bg-white rounded-[24px] border p-5">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-black text-sm">Payment History</h3>
+        <span id="totalPaid" class="text-[11px] bg-black text-white px-3 py-1 rounded-full">UGX 0</span>
+      </div>
+      <div id="paymentsList" class="divide-y text-sm"></div>
+    </div>
+  </div>
+
+  <div class="space-y-4">
+    <div class="bg-white rounded-[24px] border p-5">
+      <div class="flex justify-between mb-4">
+        <h3 class="font-black text-sm">My Issues</h3>
+        <span id="issueCount" class="bg-black text-white text-[10px] px-2 py-1 rounded-full">0</span>
+      </div>
+      <div id="issuesList" class="space-y-2"></div>
+      <div class="mt-4 flex gap-2">
+        <input id="newIssue" placeholder="Report an issue..." class="flex-1 bg-gray-50 border rounded-full px-4 py-2.5 text-xs outline-none">
+        <button onclick="createIssue()" class="bg-black text-white px-5 rounded-full text-xs font-bold">Add</button>
+      </div>
+    </div>
+    <div class="bg-white rounded-[24px] border p-5">
+      <h3 class="font-black text-sm">My Lease</h3>
+      <div class="text-[12px] text-gray-600 mt-2 leading-relaxed">
+        Tenant: <span id="tenantName" class="font-semibold text-black">—</span><br>
+        Phone: <span class="phoneTxt font-semibold text-black">—</span><br>
+        Unit <span class="unitTxt font-semibold text-black">—</span><br>
+        Rent UGX <span id="rentLabel" class="font-semibold text-black">—</span><br>
+        Lease: <span id="leaseRange" class="font-semibold text-black">—</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="balanceModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onclick="this.classList.add('hidden')">
+  <div class="bg-white rounded-[20px] p-6 max-w-sm w-full" onclick="event.stopPropagation()">
+    <h3 class="font-black">Balance breakdown</h3>
+    <div id="balanceDetails" class="text-sm mt-3 space-y-2"></div>
+    <button onclick="this.closest('#balanceModal').classList.add('hidden')" class="w-full mt-4 bg-black text-white py-2.5 rounded-full text-sm font-bold">Close</button>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   SHARED DATABASE
+   ================================================================ */
+const STORE_KEY = 'rock_housings_db_v1';
+
+function loadDB() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); }
+    catch { return {}; }
+}
+function saveDB(data) { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+
+/* ================================================================
+   CONTEXT — ?tenant=<id> is the permanent link
+   ================================================================ */
+const p = new URLSearchParams(location.search);
+let TENANT_ID = p.get('tenant') || localStorage.getItem('rock_tenant') || '';
+if (TENANT_ID) localStorage.setItem('rock_tenant', TENANT_ID);
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const YEAR = new Date().getFullYear();
+document.getElementById('yearLabel').innerText = YEAR;
+
+let tenant = null, unitObj = null, RENT = 0, LANDLORD_ID = null, unit = '—', phone = '—';
+
+function resolveTenant() {
+    const db = loadDB();
+    const tenants = db.tenants || [];
+    const units = db.units || [];
+
+    tenant = tenants.find(t => t.id === TENANT_ID);
+    if (!tenant) {
+        /* Fallback: try first active tenant so page doesn't break */
+        tenant = tenants.find(t => t.status === 'active');
+        if (tenant) TENANT_ID = tenant.id;
+    }
+    if (tenant) {
+        LANDLORD_ID = tenant.landlordId;
+        unitObj = units.find(u => u.id === tenant.unitId);
+        unit = unitObj ? unitObj.name : '—';
+        phone = tenant.contact || '—';
+        RENT = Number(tenant.rent) || (unitObj ? Number(unitObj.rent) : 0) || 0;
+
+        document.getElementById('unitLabel').innerText = unit;
+        document.getElementById('phoneLabel').innerText = phone;
+        document.querySelectorAll('.unitTxt').forEach(e => e.innerText = unit);
+        document.querySelectorAll('.phoneTxt').forEach(e => e.innerText = phone);
+        document.getElementById('tenantName').innerText = tenant.name;
+        document.getElementById('rentLabel').innerText = RENT.toLocaleString();
+        document.getElementById('leaseRange').innerText = (tenant.leaseStart||'—') + ' → ' + (tenant.leaseEnd||'—');
+    } else {
+        document.getElementById('unitLabel').innerText = 'No tenant link';
+        document.getElementById('phoneLabel').innerText = '';
+        document.getElementById('tenantName').innerText = 'Not linked';
+    }
+}
+
+/* ================================================================
+   AUTO-CASCADE ENGINE
+   - Earlier months settle first
+   - Overpayment rolls into next month
+   - Each payment carries an intended "month"
+   ================================================================ */
+function cascadePayments(allPayments, rent) {
+    const perMonth = MONTHS.map((_, i) => ({
+        monthNum: i+1,
+        monthName: MONTHS[i],
+        allocated: 0,
+        status: 'unpaid'
+    }));
+
+    const buckets = MONTHS.map(() => 0);
+    allPayments.forEach(pay => {
+        const amt = Number(pay.amount) || 0;
+        let m = Number(pay.month);
+        if (!m || m < 1 || m > 12) {
+            const d = pay.date ? new Date(pay.date) : new Date();
+            m = (d.getMonth() + 1);
+        }
+        buckets[m-1] += amt;
+    });
+
+    let carry = 0;
+    for (let i = 0; i < 12; i++) {
+        const available = buckets[i] + carry;
+        const needed = rent;
+        if (available >= needed && needed > 0) {
+            perMonth[i].allocated = needed;
+            perMonth[i].status = 'paid';
+            carry = available - needed;
+        } else if (available > 0) {
+            perMonth[i].allocated = available;
+            perMonth[i].status = 'partial';
+            carry = 0;
+        } else {
+            perMonth[i].allocated = 0;
+            perMonth[i].status = 'unpaid';
+            carry = 0;
+        }
+    }
+
+    const totalPaid = perMonth.reduce((s,m) => s + m.allocated, 0);
+    const monthsPaid = perMonth.filter(m => m.status === 'paid').length;
+    const totalDue = perMonth.reduce((s,m) => s + Math.max(0, rent - m.allocated), 0);
+    return { perMonth, totalPaid, monthsPaid, carry, totalDue };
+}
+
+function currentMonthNum() { return new Date().getMonth() + 1; }
+function currentRent() { return RENT; }
+function currentDue() {
+    const { perMonth } = cascadePayments(myPayments(), RENT);
+    const cur = perMonth[currentMonthNum() - 1];
+    return Math.max(0, RENT - cur.allocated);
+}
+function myPayments() {
+    const db = loadDB();
+    const pays = db.tenantPayments || [];
+    return pays.filter(p => p.tenantId === TENANT_ID);
+}
+
+/* ================================================================
+   PAYMENT FLOW
+   ================================================================ */
+function setAmount(v) {
+    document.getElementById('amountInput').value = Math.max(0, Math.floor(v));
+    generatePRN();
+}
+function generatePRN() {
+    let amt = parseInt(document.getElementById('amountInput').value) || 0;
+    const prn = `RH-${unit}-${amt}-${YEAR}${String(currentMonthNum()).padStart(2,'0')}`;
+    document.getElementById('prn').innerText = prn;
+    document.getElementById('prnAmount').innerText = 'UGX ' + amt.toLocaleString();
+    return { prn, amt };
+}
+function copyPRN() {
+    const { prn } = generatePRN();
+    navigator.clipboard.writeText(prn).catch(()=>{});
+    const s = document.getElementById('payStatus');
+    s.classList.remove('hidden');
+    s.innerText = 'Copied PRN: ' + prn;
+    setTimeout(() => s.classList.add('hidden'), 2500);
+}
+
+function makePayment(method) {
+    const { prn, amt } = generatePRN();
+    if (!amt || amt <= 0) { alert('Enter an amount first.'); return; }
+    if (!TENANT_ID) { alert('This portal is not linked to a tenant yet.'); return; }
+
+    const db = loadDB();
+    if (!db.tenantPayments) db.tenantPayments = [];
+
+    /* Auto-pick earliest unpaid month */
+    const { perMonth } = cascadePayments(myPayments(), RENT);
+    let target = perMonth.find(m => m.status !== 'paid');
+    target = target ? target.monthNum : currentMonthNum();
+
+    const receipt = 'RC-' + Date.now().toString().slice(-6);
+    const payment = {
+        id: 'tp_' + Date.now(),
+        landlordId: LANDLORD_ID,
+        tenantId: TENANT_ID,
+        unit, phone,
+        prn, amount: amt, method,
+        date: new Date().toISOString().slice(0,10),
+        month: target,
+        year: YEAR,
+        monthName: MONTHS[target-1],
+        period: YEAR + '-' + String(target).padStart(2,'0'),
+        status: 'Confirmed',
+        source: 'tenant-portal',
+        receipt
+    };
+    db.tenantPayments.unshift(payment);
+
+    if (!db.activityLogs) db.activityLogs = [];
+    db.activityLogs.unshift({
+        id: 'log_' + Date.now(),
+        landlordId: LANDLORD_ID,
+        userId: TENANT_ID,
+        action: 'tenant_payment',
+        details: `${tenant ? tenant.name : 'Tenant'} paid UGX ${amt.toLocaleString()} for ${MONTHS[target-1]}`,
+        timestamp: Date.now()
+    });
+    db.activityLogs = db.activityLogs.slice(0, 500);
+
+    saveDB(db);
+
+    const s = document.getElementById('payStatus');
+    s.classList.remove('hidden');
+    s.innerText = `Paid UGX ${amt.toLocaleString()} for ${MONTHS[target-1]} • Receipt ${receipt}`;
+    setTimeout(() => s.classList.add('hidden'), 3500);
+
+    render();
+}
+
+/* ================================================================
+   RENDER
+   ================================================================ */
+function render() {
+    resolveTenant();
+
+    const pays = myPayments();
+    const cascade = cascadePayments(pays, RENT);
+    const curMonth = currentMonthNum();
+    const { perMonth, totalPaid, monthsPaid, totalDue } = cascade;
+
+    document.getElementById('balanceDue').innerText = 'UGX ' + totalDue.toLocaleString();
+    document.getElementById('balanceMeta').innerText = monthsPaid + ' of 12 months paid';
+    document.getElementById('paidYTD').innerText = 'UGX ' + totalPaid.toLocaleString();
+
+    document.getElementById('balanceDetails').innerHTML = perMonth.map(m => {
+        const short = Math.max(0, RENT - m.allocated);
+        const color = m.status === 'paid' ? 'text-green-600' : m.status === 'partial' ? 'text-amber-600' : 'text-gray-500';
+        return `<div class="flex justify-between">
+            <span>${m.monthName}</span>
+            <span class="${color} font-semibold">${
+                m.status === 'paid' ? 'Paid' :
+                m.status === 'partial' ? 'UGX ' + m.allocated.toLocaleString() + ' (UGX ' + short.toLocaleString() + ' left)' :
+                'Unpaid'
+            }</span>
+        </div>`;
+    }).join('');
+
+    document.getElementById('monthsGrid').innerHTML = perMonth.map(m => {
+        const isCurrent = m.monthNum === curMonth;
+        let cls = 'month-unpaid';
+        if (m.status === 'paid') cls = 'month-paid';
+        else if (m.status === 'partial') cls = 'month-paid-partial';
+        else if (m.monthNum > curMonth) cls = 'month-future';
+        if (isCurrent) cls += ' month-current';
+
+        const line2 = m.status === 'paid' ? 'Fully paid'
+                    : m.status === 'partial' ? 'UGX ' + (RENT - m.allocated).toLocaleString() + ' left'
+                    : m.monthNum > curMonth ? 'Upcoming' : 'Unpaid';
+
+        return `
+        <div onclick="showMonthDetails(${m.monthNum})" class="cursor-pointer rounded-[16px] p-3 ${cls} hover:scale-[1.02] transition">
+            <div class="flex justify-between items-center">
+                <span class="font-black text-xs">${m.monthName}</span>
+                ${isCurrent ? '<span class="text-[8px] px-1.5 py-0.5 rounded bg-white/30">NOW</span>' : ''}
+            </div>
+            <div class="text-[10px] mt-1">${line2}</div>
+            ${m.allocated > 0 ? `<div class="text-[9px] mt-1 opacity-80">Paid: UGX ${m.allocated.toLocaleString()}</div>` : ''}
+        </div>`;
+    }).join('');
+    document.getElementById('monthsSummary').innerText = monthsPaid + '/12';
+
+    document.getElementById('totalPaid').innerText = 'UGX ' + totalPaid.toLocaleString();
+    document.getElementById('paymentsList').innerHTML = pays.length
+        ? pays.map(x => `
+            <div class="flex justify-between py-3 hover:bg-gray-50 px-2 -mx-2 rounded-xl cursor-pointer" onclick="showPaymentDetail('${x.id}')">
+                <div>
+                    <div class="font-bold text-xs">UGX ${Number(x.amount).toLocaleString()} • ${x.monthName || ''}</div>
+                    <div class="text-[10px] text-gray-500">${x.date} • ${x.prn} • ${x.method}</div>
+                </div>
+                <span class="text-[10px] bg-black text-white px-2 py-1 rounded-full h-fit">${x.receipt || x.id}</span>
+            </div>`).join('')
+        : '<div class="text-xs text-gray-400 py-4 text-center">No payments yet</div>';
+
+    /* Tickets — include tenant "Mark Resolved" button */
+    const db = loadDB();
+    const tickets = (db.tenantTickets || []).filter(t => t.tenantId === TENANT_ID);
+    document.getElementById('issueCount').innerText = tickets.length;
+    document.getElementById('issuesList').innerHTML = tickets.length
+        ? tickets.map(t => {
+            const isDone = t.status === 'Done' || t.status === 'Resolved';
+            const confirmed = t.tenantConfirmed === true;
+            const badge = isDone ? '<span class="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Resolved</span>'
+                          : '<span class="text-[9px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold">' + t.status + '</span>';
+            const confirmBtn = isDone && !confirmed
+                ? `<button onclick="confirmResolved('${t.id}')" class="mt-2 w-full text-[10px] bg-green-600 text-white py-1.5 rounded-full font-bold">Mark Resolved ✓</button>`
+                : (confirmed ? '<div class="mt-2 text-[10px] text-green-700 font-bold">You confirmed ✓</div>' : '');
+            return `
+            <div class="bg-[#FFF8E1] border rounded-xl p-3">
+                <div class="flex justify-between items-start gap-2">
+                    <div class="font-bold text-[13px] flex-1">${t.issue}</div>
+                    ${badge}
+                </div>
+                <div class="text-[11px] text-gray-600 mt-1">${t.id} • ${t.date}</div>
+                ${confirmBtn}
+            </div>`;
+        }).join('')
+        : '<div class="text-[11px] text-gray-400 text-center py-2">No issues reported</div>';
+}
+
+function showMonthDetails(mNum) {
+    const pays = myPayments();
+    const { perMonth } = cascadePayments(pays, RENT);
+    const bucket = perMonth[mNum - 1];
+    const name = MONTHS[mNum-1];
+    let txt = `${name} ${YEAR} • Unit ${unit}\n\n`;
+    txt += `Status: ${bucket.status.toUpperCase()}\n`;
+    txt += `Rent: UGX ${RENT.toLocaleString()}\n`;
+    txt += `Allocated: UGX ${bucket.allocated.toLocaleString()}\n`;
+    const short = Math.max(0, RENT - bucket.allocated);
+    if (short > 0) txt += `Remaining: UGX ${short.toLocaleString()}\n`;
+    alert(txt);
+}
+function showPaymentDetail(id) {
+    const p = myPayments().find(x => x.id === id);
+    if (!p) return;
+    alert(`Receipt ${p.receipt || p.id}\nMonth: ${p.monthName} ${p.year || ''}\nPRN: ${p.prn}\nAmount: UGX ${Number(p.amount).toLocaleString()}\nMethod: ${p.method}\nDate: ${p.date}\nStatus: ${p.status}`);
+}
+
+/* ================================================================
+   CREATE ISSUE — goes to admin Maintenance
+   ================================================================ */
+function createIssue() {
+    const v = document.getElementById('newIssue').value.trim();
+    if (!v) return;
+    if (!TENANT_ID) { alert('Portal not linked.'); return; }
+
+    const db = loadDB();
+    if (!db.tenantTickets) db.tenantTickets = [];
+
+    const ticket = {
+        id: 'T-' + Math.floor(100 + Math.random()*900),
+        landlordId: LANDLORD_ID,
+        tenantId: TENANT_ID,
+        tenantName: tenant ? tenant.name : 'Tenant',
+        unitId: unitObj ? unitObj.id : null,
+        unit, phone,
+        issue: v,
+        status: 'Open',
+        tenantConfirmed: false,
+        date: new Date().toISOString().slice(0,10)
+    };
+    db.tenantTickets.unshift(ticket);
+
+    if (!db.activityLogs) db.activityLogs = [];
+    db.activityLogs.unshift({
+        id: 'log_' + Date.now(),
+        landlordId: LANDLORD_ID,
+        userId: TENANT_ID,
+        action: 'tenant_ticket',
+        details: `${tenant ? tenant.name : 'Tenant'} reported: ${v}`,
+        timestamp: Date.now()
+    });
+    db.activityLogs = db.activityLogs.slice(0, 500);
+
+    saveDB(db);
+    document.getElementById('newIssue').value = '';
+    render();
+}
+
+/* ================================================================
+   CONFIRM RESOLVED — tenant response button
+   ================================================================ */
+function confirmResolved(ticketId) {
+    const db = loadDB();
+    const t = (db.tenantTickets || []).find(x => x.id === ticketId);
+    if (!t) return;
+    if (!confirm('Confirm this issue has been resolved?')) return;
+    t.tenantConfirmed = true;
+    t.tenantConfirmedAt = Date.now();
+
+    if (!db.activityLogs) db.activityLogs = [];
+    db.activityLogs.unshift({
+        id: 'log_' + Date.now(),
+        landlordId: LANDLORD_ID,
+        userId: TENANT_ID,
+        action: 'tenant_confirmed',
+        details: `${tenant ? tenant.name : 'Tenant'} confirmed resolution of "${t.issue}"`,
+        timestamp: Date.now()
+    });
+    db.activityLogs = db.activityLogs.slice(0, 500);
+
+    saveDB(db);
+    render();
+}
+
+/* Live sync */
+window.addEventListener('storage', e => { if (e.key === STORE_KEY) render(); });
+window.addEventListener('focus', render);
+
+resolveTenant();
+render();
+</script>
+</body>
+</html>
